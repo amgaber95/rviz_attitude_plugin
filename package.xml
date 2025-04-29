@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>rviz_attitude_plugin</name>
+  <version>0.1.0</version>
+  <description>RViz attitude display plugin for visualizing orientation data.</description>
+
+  <maintainer email="abdulrahman.mahmoud1995@gmail.com">Abdelrahman Mahmoud</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rviz_common</depend>
+  <depend>rviz_rendering</depend>
+  <depend>rviz_ogre_vendor</depend>
+  <depend>pluginlib</depend>
+
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+
+  <build_depend>Qt5</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>eigen</build_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

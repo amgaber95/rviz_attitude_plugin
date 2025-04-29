@@ -1,0 +1,7 @@
+<library path="lib/librviz_attitude_plugin">
+  <class name="rviz_attitude_plugin::AttitudeDisplay"
+         type="rviz_attitude_plugin::AttitudeDisplay"
+         base_class_type="rviz_common::Display">
+    <description>Displays vehicle attitude information inside RViz.</description>
+  </class>
+</library>
