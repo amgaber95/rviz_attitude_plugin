@@ -1,24 +1,34 @@
 /*
- * RViz Attitude Display Plugin - Overlay geometry helpers (header-only)
+ * RViz Attitude Display Plugin - Overlay utilities
  */
 
 #ifndef RVIZ_ATTITUDE_PLUGIN__OVERLAY_SYSTEM_HPP_
 #define RVIZ_ATTITUDE_PLUGIN__OVERLAY_SYSTEM_HPP_
 
 #include <algorithm>
+#include <memory>
+#include <string>
 #include <utility>
 
+#include <QImage>
 #include <QSize>
+
+#include <OgreHardwarePixelBuffer.h>
+#include <OgreMaterialManager.h>
+#include <OgreTextureManager.h>
+#include <Overlay/OgreOverlay.h>
+#include <Overlay/OgreOverlayManager.h>
+#include <Overlay/OgrePanelOverlayElement.h>
 
 namespace rviz_attitude_plugin
 {
 
 /**
- * @brief Calculates overlay positioning relative to an RViz render panel.
+ * @brief Computes overlay geometry relative to an RViz render panel.
  *
- * Stores simple width/height/offset information and resolves the absolute
- * position based on an anchor selection. All methods are inline to avoid
- * translation unit coupling when included broadly.
+ * Stores basic width/height/offset data and resolves the absolute position
+ * using a configurable anchor. Methods are inline so the helper can be used
+ * from multiple translation units without requiring a dedicated source file.
  */
 class OverlayGeometryManager
 {
@@ -61,9 +71,6 @@ public:
     return geometry_;
   }
 
-  /**
-   * @brief Clamp the configured offsets so the overlay stays inside panel bounds.
-   */
   inline std::pair<int, int> clampOffsets(const QSize & panel_size) const
   {
     const int max_x = std::max(0, panel_size.width() - geometry_.width);
@@ -74,9 +81,6 @@ public:
     return {clamped_x, clamped_y};
   }
 
-  /**
-   * @brief Calculate absolute overlay position relative to the selected anchor.
-   */
   inline std::pair<int, int> calculatePosition(const QSize & panel_size) const
   {
     auto [offset_x, offset_y] = clampOffsets(panel_size);
@@ -88,7 +92,6 @@ public:
         x = panel_size.width() - geometry_.width - offset_x;
         break;
       case Anchor::TopLeft:
-        // already relative to top-left
         break;
       case Anchor::BottomRight:
         x = panel_size.width() - geometry_.width - offset_x;
@@ -104,6 +107,182 @@ public:
 
 private:
   Geometry geometry_;
+};
+
+/**
+ * @brief RAII wrapper that locks an Ogre pixel buffer for the lifetime of the object.
+ *
+ * Handles lock/unlock automatically and exposes a convenience helper for
+ * creating a QImage that writes directly into the buffer memory.
+ */
+class ScopedPixelBuffer
+{
+public:
+  explicit ScopedPixelBuffer(const Ogre::HardwarePixelBufferSharedPtr & buffer)
+  : buffer_(buffer)
+  {
+    if (buffer_) {
+      buffer_->lock(Ogre::HardwareBuffer::HBL_NORMAL);
+    }
+  }
+
+  ScopedPixelBuffer(const ScopedPixelBuffer &) = delete;
+  ScopedPixelBuffer & operator=(const ScopedPixelBuffer &) = delete;
+
+  ScopedPixelBuffer(ScopedPixelBuffer && other) noexcept
+  : buffer_(std::move(other.buffer_))
+  {
+  }
+
+  ScopedPixelBuffer & operator=(ScopedPixelBuffer && other) noexcept
+  {
+    if (this != &other) {
+      release();
+      buffer_ = std::move(other.buffer_);
+    }
+    return *this;
+  }
+
+  ~ScopedPixelBuffer()
+  {
+    release();
+  }
+
+  inline bool valid() const
+  {
+    return static_cast<bool>(buffer_);
+  }
+
+  inline QImage getQImage(unsigned int width, unsigned int height)
+  {
+    if (!buffer_) {
+      return QImage();
+    }
+
+    const Ogre::PixelBox & pixel_box = buffer_->getCurrentLock();
+    auto * dest = static_cast<Ogre::uint8 *>(pixel_box.data);
+    if (!dest) {
+      return QImage();
+    }
+
+    return QImage(dest, static_cast<int>(width), static_cast<int>(height), QImage::Format_ARGB32);
+  }
+
+private:
+  inline void release()
+  {
+    if (buffer_) {
+      buffer_->unlock();
+      buffer_.reset();
+    }
+  }
+
+  Ogre::HardwarePixelBufferSharedPtr buffer_;
+};
+
+/**
+ * @brief Manages a single Ogre overlay panel for rendering.
+ *
+ * Handles creation, destruction, and updates of Ogre overlay resources including:
+ * - Overlay container
+ * - Panel element  
+ * - Material with texture
+ * - Texture for pixel buffer access
+ *
+ * Provides methods for positioning, resizing, and updating the overlay texture
+ * from a QImage via the pixel buffer.
+ */
+class OverlayPanel
+{
+public:
+  /**
+   * @brief Construct an overlay panel with the given name.
+   * 
+   * Creates Ogre overlay, panel element, material, and texture resources.
+   * The overlay is initially hidden.
+   * 
+   * @param name Base name for the overlay resources (will be suffixed with "Overlay", "Panel", etc.)
+   */
+  explicit OverlayPanel(const std::string & name);
+  
+  /**
+   * @brief Destructor - cleans up all Ogre resources.
+   */
+  ~OverlayPanel();
+
+  // Disable copying
+  OverlayPanel(const OverlayPanel &) = delete;
+  OverlayPanel & operator=(const OverlayPanel &) = delete;
+
+  /**
+   * @brief Show the overlay.
+   */
+  void show();
+
+  /**
+   * @brief Hide the overlay.
+   */
+  void hide();
+
+  /**
+   * @brief Check if the overlay is currently visible.
+   * @return true if visible, false otherwise
+   */
+  bool isVisible() const;
+
+  /**
+   * @brief Set the overlay position in pixels.
+   * @param left Left coordinate in pixels from the left edge
+   * @param top Top coordinate in pixels from the top edge
+   */
+  void setPosition(int left, int top);
+
+  /**
+   * @brief Set the overlay dimensions in pixels.
+   * @param width Width in pixels
+   * @param height Height in pixels
+   */
+  void setDimensions(unsigned int width, unsigned int height);
+
+  /**
+   * @brief Update the texture size, recreating the texture if necessary.
+   * 
+   * If the texture size changes, the old texture is destroyed and a new one
+   * is created with the specified dimensions.
+   * 
+   * @param width New texture width (minimum 1)
+   * @param height New texture height (minimum 1)
+   */
+  void updateTextureSize(unsigned int width, unsigned int height);
+
+  /**
+   * @brief Get a locked pixel buffer for writing texture data.
+   * 
+   * Returns a RAII-wrapped pixel buffer that is automatically unlocked
+   * when the ScopedPixelBuffer object is destroyed.
+   * 
+   * @return ScopedPixelBuffer that provides access to the texture pixels
+   */
+  ScopedPixelBuffer getPixelBuffer();
+
+  /**
+   * @brief Get the current texture width.
+   * @return Texture width in pixels, or 0 if no texture exists
+   */
+  unsigned int textureWidth() const;
+
+  /**
+   * @brief Get the current texture height.
+   * @return Texture height in pixels, or 0 if no texture exists
+   */
+  unsigned int textureHeight() const;
+
+private:
+  std::string name_;
+  Ogre::Overlay * overlay_;
+  Ogre::PanelOverlayElement * panel_;
+  Ogre::MaterialPtr material_;
+  Ogre::TexturePtr texture_;
 };
 
 }  // namespace rviz_attitude_plugin
