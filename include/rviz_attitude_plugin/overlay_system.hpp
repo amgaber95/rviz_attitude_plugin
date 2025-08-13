@@ -285,6 +285,150 @@ private:
   Ogre::TexturePtr texture_;
 };
 
+// ============================================================================
+// OverlayManager - High-level overlay coordinator and rendering pipeline
+// ============================================================================
+
+// Forward declarations
+namespace rviz_common {
+class DisplayContext;
+class RenderPanel;
+}
+
+class QWidget;
+
+namespace widgets {
+class AttitudeWidget;
+}
+
+/**
+ * @brief High-level manager coordinating the complete overlay rendering pipeline.
+ * 
+ * Responsibilities:
+ * - Initialize and manage OverlayPanel lifecycle
+ * - Coordinate OverlayGeometryManager for positioning
+ * - Render QWidget (AttitudeWidget) to QImage
+ * - Transfer QImage to Ogre texture via pixel buffer
+ * - Manage overlay visibility and Z-order
+ * - Handle property updates (size, position, anchor, visibility)
+ * 
+ * This class provides the complete integration between Qt widgets and
+ * RViz's Ogre-based rendering system.
+ */
+class OverlayManager
+{
+public:
+  /**
+   * @brief Construct an overlay manager.
+   * 
+   * Does not create any resources until initialize() is called.
+   */
+  OverlayManager();
+
+  /**
+   * @brief Destructor - ensures proper cleanup.
+   */
+  ~OverlayManager();
+
+  // Disable copying
+  OverlayManager(const OverlayManager &) = delete;
+  OverlayManager & operator=(const OverlayManager &) = delete;
+
+  /**
+   * @brief Initialize the overlay system.
+   * 
+   * Creates the OverlayPanel and sets up the rendering pipeline.
+   * Must be called before render() can be used.
+   * 
+   * @param context RViz display context for accessing render panel
+   * @param widget The AttitudeWidget to render
+   * @param overlay_name Unique name for the overlay resources
+   */
+  void initialize(
+    rviz_common::DisplayContext * context,
+    QWidget * widget,
+    const std::string & overlay_name);
+
+  /**
+   * @brief Shutdown and clean up overlay resources.
+   * 
+   * Destroys the OverlayPanel and releases all resources.
+   * Safe to call multiple times.
+   */
+  void shutdown();
+
+  /**
+   * @brief Render the widget to the overlay.
+   * 
+   * This is the main rendering method that:
+   * 1. Renders the widget to a QImage
+   * 2. Copies the QImage to the Ogre texture
+   * 3. Updates overlay position based on current geometry
+   * 
+   * Should be called from the display's update() method.
+   * Does nothing if not initialized or if invisible.
+   */
+  void render();
+
+  /**
+   * @brief Update overlay properties (geometry, visibility).
+   * 
+   * Updates the overlay's size, position, anchor point, and visibility.
+   * Call this when RViz properties change.
+   * 
+   * @param width Overlay width in pixels
+   * @param height Overlay height in pixels
+   * @param offset_x Offset from anchor point (X)
+   * @param offset_y Offset from anchor point (Y)
+   * @param anchor Anchor position (TopRight, TopLeft, BottomRight, BottomLeft)
+   * @param visible Whether the overlay should be visible
+   */
+  void updateProperties(
+    int width,
+    int height,
+    int offset_x,
+    int offset_y,
+    OverlayGeometryManager::Anchor anchor,
+    bool visible);
+
+  /**
+   * @brief Check if the overlay is currently visible.
+   * @return true if visible, false otherwise
+   */
+  bool isVisible() const;
+
+  /**
+   * @brief Get the current overlay width.
+   * @return Width in pixels
+   */
+  int getWidth() const;
+
+  /**
+   * @brief Get the current overlay height.
+   * @return Height in pixels
+   */
+  int getHeight() const;
+
+private:
+  /**
+   * @brief Update overlay position based on current geometry and render panel size.
+   */
+  void updatePosition();
+
+  /**
+   * @brief Get the current RViz render panel.
+   * @return Pointer to render panel, or nullptr if not available
+   */
+  rviz_common::RenderPanel * getRenderPanel();
+
+  rviz_common::DisplayContext * context_;
+  QWidget * widget_;
+  std::unique_ptr<OverlayPanel> panel_;
+  OverlayGeometryManager geometry_manager_;
+  bool initialized_;
+  bool visible_;
+};
+
 }  // namespace rviz_attitude_plugin
 
 #endif  // RVIZ_ATTITUDE_PLUGIN__OVERLAY_SYSTEM_HPP_

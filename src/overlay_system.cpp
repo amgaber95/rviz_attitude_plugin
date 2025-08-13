@@ -1,8 +1,8 @@
 /*
  * RViz Attitude Display Plugin - Overlay System Implementation
  * 
- * Implements the OverlayPanel class for managing Ogre overlay resources
- * and rendering Qt widgets to the RViz viewport.
+ * Implements the OverlayPanel and OverlayManager classes for managing
+ * Ogre overlay resources and rendering Qt widgets to the RViz viewport.
  */
 
 #include "rviz_attitude_plugin/overlay_system.hpp"
@@ -16,7 +16,13 @@
 #include <Overlay/OgreOverlayManager.h>
 #include <Overlay/OgrePanelOverlayElement.h>
 
+#include <rviz_common/display_context.hpp>
 #include <rviz_common/logging.hpp>
+#include <rviz_common/render_panel.hpp>
+
+#include <QImage>
+#include <QPainter>
+#include <QWidget>
 
 #include <algorithm>
 #include <cstring>
@@ -251,6 +257,189 @@ unsigned int OverlayPanel::textureWidth() const
 unsigned int OverlayPanel::textureHeight() const
 {
   return texture_ ? texture_->getHeight() : 0;
+}
+
+// ============================================================================
+// OverlayManager Implementation
+// ============================================================================
+
+OverlayManager::OverlayManager()
+: context_(nullptr),
+  widget_(nullptr),
+  initialized_(false),
+  visible_(false)
+{
+}
+
+OverlayManager::~OverlayManager()
+{
+  shutdown();
+}
+
+void OverlayManager::initialize(
+  rviz_common::DisplayContext * context,
+  QWidget * widget,
+  const std::string & overlay_name)
+{
+  if (initialized_) {
+    shutdown();
+  }
+
+  context_ = context;
+  widget_ = widget;
+
+  if (!context_ || !widget_) {
+    RVIZ_COMMON_LOG_ERROR("OverlayManager: Invalid context or widget");
+    return;
+  }
+
+  try {
+    panel_ = std::make_unique<OverlayPanel>(overlay_name);
+    initialized_ = true;
+    RVIZ_COMMON_LOG_DEBUG_STREAM("OverlayManager initialized: " << overlay_name);
+  } catch (const std::exception & e) {
+    RVIZ_COMMON_LOG_ERROR_STREAM("Failed to create overlay panel: " << e.what());
+    panel_.reset();
+    initialized_ = false;
+  }
+}
+
+void OverlayManager::shutdown()
+{
+  if (panel_) {
+    panel_->hide();
+    panel_.reset();
+  }
+
+  initialized_ = false;
+  visible_ = false;
+  context_ = nullptr;
+  widget_ = nullptr;
+}
+
+void OverlayManager::render()
+{
+  if (!initialized_ || !visible_ || !panel_ || !widget_) {
+    return;
+  }
+
+  // Get geometry
+  const auto & geom = geometry_manager_.getGeometry();
+  const unsigned int width = static_cast<unsigned int>(geom.width);
+  const unsigned int height = static_cast<unsigned int>(geom.height);
+
+  if (width == 0 || height == 0) {
+    return;
+  }
+
+  // Update texture size if needed
+  panel_->updateTextureSize(width, height);
+
+  // Get pixel buffer for writing
+  auto pixel_buffer = panel_->getPixelBuffer();
+  if (!pixel_buffer.valid()) {
+    return;
+  }
+
+  // Get QImage that writes directly to the pixel buffer
+  QImage image = pixel_buffer.getQImage(width, height);
+  if (image.isNull()) {
+    return;
+  }
+
+  // Render widget to the image
+  QPainter painter(&image);
+  painter.setRenderHint(QPainter::Antialiasing, true);
+  painter.setRenderHint(QPainter::TextAntialiasing, true);
+
+  // Resize widget if needed
+  if (widget_->size() != QSize(static_cast<int>(width), static_cast<int>(height))) {
+    widget_->resize(static_cast<int>(width), static_cast<int>(height));
+  }
+
+  // Render the widget
+  widget_->render(&painter);
+
+  // QPainter destructor flushes to image, pixel_buffer destructor unlocks the buffer
+  painter.end();
+
+  // Update position
+  updatePosition();
+}
+
+void OverlayManager::updateProperties(
+  int width,
+  int height,
+  int offset_x,
+  int offset_y,
+  OverlayGeometryManager::Anchor anchor,
+  bool visible)
+{
+  if (!initialized_ || !panel_) {
+    return;
+  }
+
+  // Update geometry
+  geometry_manager_.setGeometry(width, height, offset_x, offset_y, anchor);
+
+  // Update dimensions
+  panel_->setDimensions(static_cast<unsigned int>(width), static_cast<unsigned int>(height));
+
+  // Update visibility
+  visible_ = visible;
+  if (visible_) {
+    panel_->show();
+    updatePosition();
+  } else {
+    panel_->hide();
+  }
+}
+
+bool OverlayManager::isVisible() const
+{
+  return visible_ && initialized_ && panel_ && panel_->isVisible();
+}
+
+int OverlayManager::getWidth() const
+{
+  return geometry_manager_.getGeometry().width;
+}
+
+int OverlayManager::getHeight() const
+{
+  return geometry_manager_.getGeometry().height;
+}
+
+void OverlayManager::updatePosition()
+{
+  if (!initialized_ || !panel_) {
+    return;
+  }
+
+  auto * render_panel = getRenderPanel();
+  if (!render_panel) {
+    return;
+  }
+
+  // Get panel size
+  const QSize panel_size = render_panel->size();
+  
+  // Calculate position based on anchor
+  auto [x, y] = geometry_manager_.calculatePosition(panel_size);
+
+  // Update panel position
+  panel_->setPosition(x, y);
+}
+
+rviz_common::RenderPanel * OverlayManager::getRenderPanel()
+{
+  if (!context_) {
+    return nullptr;
+  }
+
+  // Get the first (main) render panel from the context
+  auto render_panel = context_->getViewManager()->getRenderPanel();
+  return render_panel;
 }
 
 }  // namespace rviz_attitude_plugin
