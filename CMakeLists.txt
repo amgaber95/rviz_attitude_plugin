@@ -55,6 +55,15 @@ set(UTILITY_HEADERS
   include/rviz_attitude_plugin/supported_types.hpp
 )
 
+# Widget sources
+set(WIDGET_SOURCES
+  src/widgets/artificial_horizon.cpp
+)
+
+set(WIDGET_HEADERS
+  include/rviz_attitude_plugin/widgets/artificial_horizon.hpp
+)
+
 # Overlay system (Ogre integration)
 set(OVERLAY_SOURCES
   src/overlay_system.cpp
@@ -66,10 +75,12 @@ set(OVERLAY_HEADERS
 
 # Combine all sources and headers
 set(ALL_SOURCES
+  ${WIDGET_SOURCES}
   ${OVERLAY_SOURCES}
 )
 
 set(ALL_HEADERS
+  ${WIDGET_HEADERS}
   ${OVERLAY_HEADERS}
   ${UTILITY_HEADERS}
 )
