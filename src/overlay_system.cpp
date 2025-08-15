@@ -19,6 +19,7 @@
 #include <rviz_common/display_context.hpp>
 #include <rviz_common/logging.hpp>
 #include <rviz_common/render_panel.hpp>
+#include <rviz_common/view_manager.hpp>
 
 #include <QImage>
 #include <QPainter>
@@ -31,65 +32,6 @@ namespace rviz_attitude_plugin
 {
 
 // ============================================================================
-// ScopedPixelBuffer Implementation
-// ============================================================================
-
-ScopedPixelBuffer::ScopedPixelBuffer(const Ogre::HardwarePixelBufferSharedPtr & buffer)
-: buffer_(buffer)
-{
-  if (buffer_) {
-    buffer_->lock(Ogre::HardwareBuffer::HBL_NORMAL);
-  }
-}
-
-ScopedPixelBuffer::ScopedPixelBuffer(ScopedPixelBuffer && other) noexcept
-: buffer_(std::move(other.buffer_))
-{
-}
-
-ScopedPixelBuffer & ScopedPixelBuffer::operator=(ScopedPixelBuffer && other) noexcept
-{
-  if (this != &other) {
-    if (buffer_) {
-      buffer_->unlock();
-    }
-    buffer_ = std::move(other.buffer_);
-  }
-  return *this;
-}
-
-ScopedPixelBuffer::~ScopedPixelBuffer()
-{
-  if (buffer_) {
-    buffer_->unlock();
-  }
-}
-
-bool ScopedPixelBuffer::valid() const
-{
-  return static_cast<bool>(buffer_);
-}
-
-QImage ScopedPixelBuffer::getQImage(unsigned int width, unsigned int height)
-{
-  if (!buffer_) {
-    return QImage();
-  }
-
-  const Ogre::PixelBox & pixel_box = buffer_->getCurrentLock();
-  auto * dest = static_cast<Ogre::uint8 *>(pixel_box.data);
-  if (!dest) {
-    return QImage();
-  }
-
-  // Clear buffer to transparent
-  std::memset(dest, 0, width * height * 4);
-
-  // Return QImage that writes directly to the buffer memory
-  return QImage(dest, static_cast<int>(width), static_cast<int>(height), QImage::Format_ARGB32);
-}
-
-// ============================================================================
 // OverlayPanel Implementation
 // ============================================================================
 
@@ -100,7 +42,7 @@ OverlayPanel::OverlayPanel(const std::string & name)
 {
   auto * overlay_mgr = Ogre::OverlayManager::getSingletonPtr();
   if (!overlay_mgr) {
-    RVIZ_COMMON_LOG_ERROR_STREAM("Ogre OverlayManager not available");
+    RCLCPP_ERROR(rclcpp::get_logger("rviz_attitude_plugin"), "Ogre OverlayManager not available");
     return;
   }
 
@@ -289,16 +231,16 @@ void OverlayManager::initialize(
   widget_ = widget;
 
   if (!context_ || !widget_) {
-    RVIZ_COMMON_LOG_ERROR("OverlayManager: Invalid context or widget");
+    RCLCPP_ERROR(rclcpp::get_logger("rviz_attitude_plugin"), "OverlayManager: Invalid context or widget");
     return;
   }
 
   try {
     panel_ = std::make_unique<OverlayPanel>(overlay_name);
     initialized_ = true;
-    RVIZ_COMMON_LOG_DEBUG_STREAM("OverlayManager initialized: " << overlay_name);
+    RCLCPP_DEBUG(rclcpp::get_logger("rviz_attitude_plugin"), "OverlayManager initialized: %s", overlay_name.c_str());
   } catch (const std::exception & e) {
-    RVIZ_COMMON_LOG_ERROR_STREAM("Failed to create overlay panel: " << e.what());
+    RCLCPP_ERROR(rclcpp::get_logger("rviz_attitude_plugin"), "Failed to create overlay panel: %s", e.what());
     panel_.reset();
     initialized_ = false;
   }

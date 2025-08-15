@@ -285,9 +285,7 @@ private:
   Ogre::TexturePtr texture_;
 };
 
-// ============================================================================
-// OverlayManager - High-level overlay coordinator and rendering pipeline
-// ============================================================================
+}  // namespace rviz_attitude_plugin
 
 // Forward declarations
 namespace rviz_common {
@@ -297,9 +295,12 @@ class RenderPanel;
 
 class QWidget;
 
-namespace widgets {
-class AttitudeWidget;
-}
+namespace rviz_attitude_plugin
+{
+
+// ============================================================================
+// OverlayManager - High-level overlay coordinator and rendering pipeline
+// ============================================================================
 
 /**
  * @brief High-level manager coordinating the complete overlay rendering pipeline.
