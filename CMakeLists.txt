@@ -58,10 +58,12 @@ set(UTILITY_HEADERS
 # Widget sources
 set(WIDGET_SOURCES
   src/widgets/artificial_horizon.cpp
+  src/widgets/aircraft_reference.cpp
 )
 
 set(WIDGET_HEADERS
   include/rviz_attitude_plugin/widgets/artificial_horizon.hpp
+  include/rviz_attitude_plugin/widgets/aircraft_reference.hpp
 )
 
 # Overlay system (Ogre integration)
