@@ -60,12 +60,14 @@ set(WIDGET_SOURCES
   src/widgets/artificial_horizon.cpp
   src/widgets/aircraft_reference.cpp
   src/widgets/roll_indicator.cpp
+  src/widgets/attitude_indicator.cpp
 )
 
 set(WIDGET_HEADERS
   include/rviz_attitude_plugin/widgets/artificial_horizon.hpp
   include/rviz_attitude_plugin/widgets/aircraft_reference.hpp
   include/rviz_attitude_plugin/widgets/roll_indicator.hpp
+  include/rviz_attitude_plugin/widgets/attitude_indicator.hpp
 )
 
 # Overlay system (Ogre integration)
