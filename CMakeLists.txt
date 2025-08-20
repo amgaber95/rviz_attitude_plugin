@@ -58,10 +58,12 @@ set(UTILITY_HEADERS
 # Widget sources (consolidated)
 set(WIDGET_SOURCES
   src/widgets/attitude_indicator.cpp
+  src/widgets/heading_indicator.cpp
 )
 
 set(WIDGET_HEADERS
   include/rviz_attitude_plugin/widgets/attitude_indicator.hpp
+  include/rviz_attitude_plugin/widgets/heading_indicator.hpp
 )
 
 # Overlay system (Ogre integration)
