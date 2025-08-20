@@ -59,11 +59,13 @@ set(UTILITY_HEADERS
 set(WIDGET_SOURCES
   src/widgets/attitude_indicator.cpp
   src/widgets/heading_indicator.cpp
+  src/widgets/angle_readout.cpp
 )
 
 set(WIDGET_HEADERS
   include/rviz_attitude_plugin/widgets/attitude_indicator.hpp
   include/rviz_attitude_plugin/widgets/heading_indicator.hpp
+  include/rviz_attitude_plugin/widgets/angle_readout.hpp
 )
 
 # Overlay system (Ogre integration)
@@ -75,15 +77,26 @@ set(OVERLAY_HEADERS
   include/rviz_attitude_plugin/overlay_system.hpp
 )
 
+# Main display class
+set(DISPLAY_SOURCES
+  src/attitude_display.cpp
+)
+
+set(DISPLAY_HEADERS
+  include/rviz_attitude_plugin/attitude_display.hpp
+)
+
 # Combine all sources and headers
 set(ALL_SOURCES
   ${WIDGET_SOURCES}
   ${OVERLAY_SOURCES}
+  ${DISPLAY_SOURCES}
 )
 
 set(ALL_HEADERS
   ${WIDGET_HEADERS}
   ${OVERLAY_HEADERS}
+  ${DISPLAY_HEADERS}
   ${UTILITY_HEADERS}
 )
 
