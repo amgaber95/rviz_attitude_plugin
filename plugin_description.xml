@@ -1,7 +1,19 @@
 <library path="rviz_attitude_plugin">
-  <class name="rviz_attitude_plugin::AttitudeDisplay"
+  <class name="rviz_attitude_plugin/Attitude"
          type="rviz_attitude_plugin::AttitudeDisplay"
          base_class_type="rviz_common::Display">
-    <description>Displays vehicle attitude information inside RViz.</description>
+    <description>
+      Displays attitude/orientation data from quaternions with artificial horizon,
+      heading indicator, and Euler angle readouts. Supports multiple Euler conventions
+      and displays in degrees or radians.
+      
+      Supported message types:
+      - geometry_msgs/QuaternionStamped
+      - geometry_msgs/PoseStamped
+      - geometry_msgs/PoseWithCovarianceStamped
+      - sensor_msgs/Imu
+      - nav_msgs/Odometry
+    </description>
+    <message_type>geometry_msgs/msg/QuaternionStamped</message_type>
   </class>
 </library>
