@@ -1,7 +1,5 @@
 /*
  * RViz Attitude Display Plugin - Euler Angle Converter (Header-Only)
- *
- * Converts geometry_msgs quaternions into roll/pitch/yaw using tf2 utilities.
  */
 
 #ifndef RVIZ_ATTITUDE_PLUGIN__EULER_CONVERTER_HPP_
@@ -13,19 +11,17 @@
 namespace rviz_attitude_plugin
 {
 
-/**
- * @brief Header-only quaternion to Euler converter.
- *
- * The helper normalizes incoming quaternions (falling back to identity if
- * the quaternion has zero length) before using tf2's Matrix3x3::getRPY()
- * to extract roll, pitch and yaw in radians.
- */
 class EulerConverter
 {
 public:
   EulerConverter() = default;
   ~EulerConverter() = default;
 
+  /**
+   * @brief Convert quaternion to roll/pitch/yaw using ROS tf2::Matrix3x3(q).getRPY()
+   * @param x, y, z, w Quaternion components
+   * @param roll, pitch, yaw Output Euler angles in radians (ROS standard)
+   */
   inline void convert(double x, double y, double z, double w,
                       double & roll, double & pitch, double & yaw) const
   {
@@ -42,4 +38,3 @@ public:
 }  // namespace rviz_attitude_plugin
 
 #endif  // RVIZ_ATTITUDE_PLUGIN__EULER_CONVERTER_HPP_
-

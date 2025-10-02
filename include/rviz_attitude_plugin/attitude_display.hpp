@@ -1,115 +1,119 @@
 /*
- * Copyright (c) 2025
- * All rights reserved.
  *
- * RViz Attitude Display Plugin - Main Display Class
- * 
- * Main RViz Display class that coordinates all attitude visualization components.
+ * RViz Attitude Display - Main Display Plugin Class
  */
 
 #ifndef RVIZ_ATTITUDE_PLUGIN__ATTITUDE_DISPLAY_HPP_
 #define RVIZ_ATTITUDE_PLUGIN__ATTITUDE_DISPLAY_HPP_
 
 #include <rviz_common/display.hpp>
-#include <rviz_common/properties/bool_property.hpp>
-#include <rviz_common/properties/float_property.hpp>
-#include <rviz_common/properties/int_property.hpp>
 #include <rviz_common/properties/enum_property.hpp>
-#include <rviz_common/properties/ros_topic_property.hpp>
+#include <rviz_common/properties/bool_property.hpp>
+#include <rviz_common/properties/int_property.hpp>
+#include <rviz_common/properties/string_property.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
+
+#include <QEvent>
+
+#include <rclcpp/rclcpp.hpp>
+#include "rviz_attitude_plugin/topic_utilities.hpp"
+#include "rviz_attitude_plugin/overlay_system.hpp"
 
 #include <memory>
+#include <string>
+#include <vector>
+#include <array>
+
+namespace rviz_common
+{
+class RenderPanel;
+}
+
+class QWidget;
 
 namespace rviz_attitude_plugin
 {
 
-// Forward declarations
-namespace widgets
-{
-class AttitudeIndicator;
-class HeadingIndicator;
-class AngleReadout;
-}  // namespace widgets
-
+class AttitudeWidget;
+class EulerConverter;
+class OverlayPanel;
 class OverlayManager;
 
 /**
- * @brief Main RViz Display class for attitude visualization
+ * @brief RViz display plugin for visualizing attitude/orientation data.
  * 
- * Integrates all attitude visualization components:
- * - Attitude indicator (pitch/roll with artificial horizon)
- * - Heading indicator (compass rose)
- * - Numeric angle readouts
- * - Overlay rendering system
+ * Displays attitude information from various ROS messages containing quaternions:
+ * - geometry_msgs/QuaternionStamped
+ * - geometry_msgs/PoseStamped  
+ * - geometry_msgs/PoseWithCovarianceStamped
+ * - sensor_msgs/Imu
+ * - nav_msgs/Odometry
+ * 
+ * Shows:
+ * - Artificial horizon (pitch/roll)
+ * - Heading indicator (yaw)
+ * - Numeric Euler angle readouts
+ * - Multiple Euler convention support
  */
 class AttitudeDisplay : public rviz_common::Display
 {
   Q_OBJECT
 
 public:
-  /**
-   * @brief Construct a new Attitude Display
-   */
   AttitudeDisplay();
-
-  /**
-   * @brief Destroy the Attitude Display
-   */
   ~AttitudeDisplay() override;
 
-  /**
-   * @brief Initialize the display
-   */
+protected:
   void onInitialize() override;
-
-  /**
-   * @brief Enable the display
-   */
   void onEnable() override;
-
-  /**
-   * @brief Disable the display
-   */
   void onDisable() override;
 
-  /**
-   * @brief Update the display
-   * @param wall_dt Time since last update (wall time)
-   * @param ros_dt Time since last update (ROS time)
-   */
   void update(float wall_dt, float ros_dt) override;
 
 private Q_SLOTS:
-  /**
-   * @brief Update overlay properties when settings change
-   */
+  void updateAngleUnit();
+  void updateDisplayMode();
   void updateOverlayProperties();
+  void onRefreshTopics();
+  void onTopicChanged();
 
 private:
-  // Overlay rendering system
+  void setupProperties();
+  void updateDisplay(double x, double y, double z, double w);
+  void attachOverlay();
+  bool eventFilter(QObject * object, QEvent * event) override;
+  void refreshSupportedTopics();
+  void subscribeToSelected();
+  // Unified handler for normalized orientation messages
+  void onOrientation(const geometry_msgs::msg::Quaternion & q);
+
+  std::unique_ptr<EulerConverter> converter_;
+  std::unique_ptr<AttitudeWidget> widget_;
+
+  // Properties
+  rviz_common::properties::EnumProperty * topic_property_;
+  rviz_common::properties::BoolProperty * refresh_button_property_;
+  rviz_common::properties::StringProperty * current_type_property_;
+  rviz_common::properties::IntProperty * overlay_width_property_;
+  rviz_common::properties::IntProperty * overlay_height_property_;
+  rviz_common::properties::BoolProperty * show_overlay_property_;
+  rviz_common::properties::IntProperty * overlay_x_property_;
+  rviz_common::properties::IntProperty * overlay_y_property_;
+  rviz_common::properties::EnumProperty * overlay_anchor_property_;
+  rviz_common::properties::EnumProperty * angle_unit_property_;
+  rviz_common::properties::EnumProperty * display_mode_property_;
+
+  // State
+  std::array<double, 4> last_quaternion_;  // x, y, z, w
+  bool has_data_;
+  rviz_common::RenderPanel * render_panel_;
   std::unique_ptr<OverlayManager> overlay_manager_;
+  bool overlay_event_filter_installed_;
 
-  // Widget components
-  std::unique_ptr<widgets::AttitudeIndicator> attitude_widget_;
-  std::unique_ptr<widgets::HeadingIndicator> heading_widget_;
-  std::unique_ptr<widgets::AngleReadout> pitch_readout_;
-  std::unique_ptr<widgets::AngleReadout> roll_readout_;
-  std::unique_ptr<widgets::AngleReadout> yaw_readout_;
-
-  // Properties - Display settings
-  rviz_common::properties::BoolProperty * show_attitude_property_;
-  rviz_common::properties::BoolProperty * show_heading_property_;
-  rviz_common::properties::BoolProperty * show_readouts_property_;
-
-  // Properties - Position and size
-  rviz_common::properties::IntProperty * width_property_;
-  rviz_common::properties::IntProperty * height_property_;
-  rviz_common::properties::IntProperty * left_property_;
-  rviz_common::properties::IntProperty * top_property_;
-
-  // Properties - Test values (for now, will be replaced with topic subscription)
-  rviz_common::properties::FloatProperty * test_pitch_property_;
-  rviz_common::properties::FloatProperty * test_roll_property_;
-  rviz_common::properties::FloatProperty * test_yaw_property_;
+  // Managers for separated concerns
+  AttitudeTopicManager topic_manager_;
+  OverlayGeometryManager geometry_manager_;
+  std::vector<std::string> topic_options_;
 };
 
 }  // namespace rviz_attitude_plugin
