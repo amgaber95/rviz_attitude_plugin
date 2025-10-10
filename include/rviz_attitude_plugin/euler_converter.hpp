@@ -5,8 +5,8 @@
 #ifndef RVIZ_ATTITUDE_PLUGIN__EULER_CONVERTER_HPP_
 #define RVIZ_ATTITUDE_PLUGIN__EULER_CONVERTER_HPP_
 
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2/LinearMath/Matrix3x3.hpp>
 
 namespace rviz_attitude_plugin
 {

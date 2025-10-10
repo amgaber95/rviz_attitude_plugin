@@ -89,14 +89,25 @@ add_library(${PROJECT_NAME} SHARED
   ${UTILITY_HEADERS}
 )
 
-target_link_libraries(${PROJECT_NAME}
+# Update this target_link_libraries call to use keywords
+target_link_libraries(${PROJECT_NAME} PRIVATE
   Qt5::Core
   Qt5::Gui
   Qt5::Widgets
 )
 
-ament_target_dependencies(${PROJECT_NAME}
-  ${dependencies}
+# Keep this existing target_link_libraries call
+target_link_libraries(rviz_attitude_plugin PUBLIC
+  ${geometry_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  rviz_common::rviz_common
+  rviz_rendering::rviz_rendering
+  sensor_msgs::sensor_msgs_library
+  tf2::tf2
+  tf2_geometry_msgs::tf2_geometry_msgs
 )
 
 # Prevent pluginlib from using boost
