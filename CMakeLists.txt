@@ -114,6 +114,16 @@ install(DIRECTORY include/
   DESTINATION include
 )
 
+install(DIRECTORY icons/
+  DESTINATION share/${PROJECT_NAME}/icons
+  FILES_MATCHING PATTERN "*.png"
+)
+
+# Also install the plugin description into the share tree for package:// lookups
+install(FILES plugin_description.xml
+  DESTINATION share/${PROJECT_NAME}
+)
+
 # Register plugin description with pluginlib (ROS 2 ament index)
 pluginlib_export_plugin_description_file(rviz_common plugin_description.xml)
 

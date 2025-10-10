@@ -19,6 +19,7 @@
 #include <rviz_common/properties/int_property.hpp>
 #include <rviz_common/properties/string_property.hpp>
 #include <rviz_common/logging.hpp>
+#include <rviz_common/load_resource.hpp>
 #include <rviz_rendering/render_system.hpp>
 
 #include <algorithm>
@@ -165,6 +166,10 @@ void AttitudeDisplay::setupProperties()
 void AttitudeDisplay::onInitialize()
 {
   rviz_common::Display::onInitialize();
+
+  // Ensure a custom icon shows up in the Displays tree; this matches
+  // RViz's default lookup of icons/classes/<DisplayName>.{svg,png}.
+  setIcon(rviz_common::loadPixmap("package://rviz_attitude_plugin/icons/classes/Attitude.png"));
 
   converter_ = std::make_unique<EulerConverter>();
   widget_ = std::make_unique<AttitudeWidget>();

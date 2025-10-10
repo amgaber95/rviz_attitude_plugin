@@ -15,5 +15,6 @@
       - nav_msgs/Odometry
     </description>
     <message_type>geometry_msgs/msg/QuaternionStamped</message_type>
+    <icon>package://rviz_attitude_plugin/icons/classes/Attitude.png</icon>
   </class>
 </library>
