@@ -5,8 +5,18 @@
 #ifndef RVIZ_ATTITUDE_PLUGIN__EULER_CONVERTER_HPP_
 #define RVIZ_ATTITUDE_PLUGIN__EULER_CONVERTER_HPP_
 
-#include <tf2/LinearMath/Quaternion.hpp>
-#include <tf2/LinearMath/Matrix3x3.hpp>
+// These __has_include calls allow the plugin to work w/ older ros2 versions
+#if __has_include(<tf2/LinearMath/Quaternion.hpp>)
+    #include <tf2/LinearMath/Quaternion.hpp>
+#else
+    #include <tf2/LinearMath/Quaternion.h>
+#endif
+
+#if __has_include(<tf2/LinearMath/Matrix3x3.hpp>)
+    #include <tf2/LinearMath/Matrix3x3.hpp>
+#else
+    #include <tf2/LinearMath/Matrix3x3.h>
+#endif
 
 namespace rviz_attitude_plugin
 {

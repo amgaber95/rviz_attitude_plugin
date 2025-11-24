@@ -1,6 +1,7 @@
 #include "rviz_attitude_plugin/overlay_system.hpp"
 #include "rviz_attitude_plugin/attitude_widget.hpp"
 
+#include <atomic>
 #include <OgreHardwarePixelBuffer.h>
 
 #include <rviz_common/display_context.hpp>
@@ -301,8 +302,9 @@ OverlayManager::~OverlayManager() = default;
 void OverlayManager::attach(rviz_common::DisplayContext * context)
 {
   if (!overlay_panel_) {
+    static std::atomic<int> overlay_count{0};
     rviz_rendering::RenderSystem::get()->prepareOverlays(context->getSceneManager());
-    overlay_panel_ = std::make_unique<OverlayPanel>("AttitudeDisplayHUD");
+    overlay_panel_ = std::make_unique<OverlayPanel>("AttitudeDisplayHUD" + std::to_string(overlay_count++));
   }
   if (!render_panel_) {
     auto * view_manager = context->getViewManager();
