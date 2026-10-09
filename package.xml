@@ -24,12 +24,12 @@
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
 
-  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>qtbase6-dev</build_depend>
   <build_depend>eigen</build_depend>
-  
-  <exec_depend>libqt5-core</exec_depend>
-  <exec_depend>libqt5-gui</exec_depend>
-  <exec_depend>libqt5-widgets</exec_depend>
+
+  <exec_depend>libqt6-core</exec_depend>
+  <exec_depend>libqt6-gui</exec_depend>
+  <exec_depend>libqt6-widgets</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

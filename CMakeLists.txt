@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.15)
 project(rviz_attitude_plugin)
 
 # Default to C++17
@@ -23,16 +23,16 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
-# Qt5
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
+# Qt6 for ROS 2 Lyrical
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 set(CMAKE_AUTOMOC ON)
 
 # Include directories
 include_directories(
   include
-  ${Qt5Core_INCLUDE_DIRS}
-  ${Qt5Gui_INCLUDE_DIRS}
-  ${Qt5Widgets_INCLUDE_DIRS}
+  ${Qt6Core_INCLUDE_DIRS}
+  ${Qt6Gui_INCLUDE_DIRS}
+  ${Qt6Widgets_INCLUDE_DIRS}
 )
 
 set(dependencies
@@ -91,9 +91,9 @@ add_library(${PROJECT_NAME} SHARED
 
 # Update this target_link_libraries call to use keywords
 target_link_libraries(${PROJECT_NAME} PRIVATE
-  Qt5::Core
-  Qt5::Gui
-  Qt5::Widgets
+  Qt6::Core
+  Qt6::Gui
+  Qt6::Widgets
 )
 
 # Keep this existing target_link_libraries call
